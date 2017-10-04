@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Tiny</title>
+</head>
+<body style="padding:0;margin:0;height:100vh;">
+    <canvas id="screen" style="background:black;width:100%;height:100%;"></canvas>
+</body>
+<script id="vs" type="notjs">
+attribute vec4 position;
+
+void main() {
+  gl_Position = position;
+}
+</script>
+<script id="fs" type="notjs">
+    #ifdef GL_ES 
+    precision mediump float; 
+    #endif 
+     
+    uniform float time; 
+    uniform vec2 mouse; 
+    uniform vec2 resolution; 
+     
+    #define PI 3.14159265359 
+     
+    float random(float n) { 
+        return fract(abs(sin(n * 55.753) * 367.34)); 
+    } 
+     
+    mat2 rotate2d(float angle){ 
+        return mat2(cos(angle), -sin(angle),  sin(angle), cos(angle)); 
+    } 
+     
+    void main( void ) { 
+        vec2 uv = (gl_FragCoord.xy * 2.0 -  resolution.xy) / resolution.x; 
+     
+        uv *= rotate2d(time * 0.2);  // Rotate screen. 
+         
+        float direction = -1.0; 
+        float speed = time * direction * 0.1; 
+        float distanceFromCenter = length(uv); 
+     
+        float meteorAngle = atan(uv.y, uv.x) * (180.0 / PI);  // Angle for meteor. 
+     
+        float flooredAngle = floor(meteorAngle); 
+        float randomAngle = pow(random(flooredAngle), 0.5); 
+        float t = speed + randomAngle;  // Meteor flow randomly. 
+         
+        float lightsCountOffset = 0.3; 
+        float adist = randomAngle / distanceFromCenter * lightsCountOffset; 
+        float dist = t + adist; 
+        float meteorDirection = (direction < 0.0) ? -1.0 : 0.0; 
+        dist = abs(fract(dist) + meteorDirection);  // repeat. 
+         
+        float lightLength = 100.0; 
+        float meteor = (1.0 / dist) * cos(sin(speed)) / lightLength;  // cos(sin(speed)) make endless. 
+        meteor *= distanceFromCenter * 2.0;  // Make darker with coming closer to center. 
+         
+        vec3 color = vec3(0.0); 
+        color.gb += meteor; 
+        
+        gl_FragColor = vec4(color, 1.0);
+    }
+</script>
+<script src="./node_modules/twgl.js/dist/3.x/twgl-full.js"></script>
+<script>
+    "use strict";
+
+    var gl = twgl.getWebGLContext(document.getElementById('screen'));
+    var programInfo = twgl.createProgramInfo(gl, ['vs', 'fs']);
+
+    var arrays = {
+        position: [-1, -1, 0, 1, -1, 0, -1, 1, 0, -1, 1, 0, 1, -1, 0, 1, 1, 0]
+    }
+    var bufferInfo = twgl.createBufferInfoFromArrays(gl, arrays);
+
+    function render(time) {
+        twgl.resizeCanvasToDisplaySize(gl.canvas);
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height, window.devicePixelRatio);
+
+        var uniforms = {
+            time : time * 0.001,
+            resolution: [gl.canvas.width, gl.canvas.height],
+        }
+
+        gl.useProgram(programInfo.program);
+        twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo);
+        twgl.setUniforms(programInfo, uniforms);
+        twgl.drawBufferInfo(gl, bufferInfo);
+
+        requestAnimationFrame(render);
+    }
+    requestAnimationFrame(render);
+</script>
+</html>
