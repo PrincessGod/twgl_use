@@ -1,4 +1,4 @@
 # twgl usage
 
 ### twgl samples
-* [tiny](princessgod.github.io/twgl_use/tiny.html)
+* [tiny](https://princessgod.github.io/twgl_use/tiny.html)
